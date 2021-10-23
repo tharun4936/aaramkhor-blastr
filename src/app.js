@@ -3,19 +3,20 @@ import express from 'express'
 import { API_KEY, PASSWORD } from './helpers.js'
 // const fetch = require('node-fetch');
 import fetch from 'node-fetch';
+import hbs from 'hbs'
 
 
 const __dirname = path.resolve()
 const app = express();
-const publicDirectoryPath = path.join(__dirname, '../public');
+const publicDirectoryPath = path.join(__dirname, './public');
 const viewsPath = path.join(__dirname, './templates/views');
 const partialsPath = path.join(__dirname, './templates/partials');
 const port = process.env.PORT || 3000;
 
-console.log(viewsPath, partialsPath);
+console.log(viewsPath, partialsPath, publicDirectoryPath);
 app.set('view engine', 'hbs');
-app.set('view')
-
+app.set('view', viewsPath)
+hbs.registerPartials(partialsPath)
 app.use(express.static(publicDirectoryPath))
 app.use(express.json())
 
