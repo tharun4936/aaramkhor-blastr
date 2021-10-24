@@ -54,19 +54,25 @@ html {
   width: device-width;
 }
 
-article, aside, dialog, figcaption, figure, footer, header, hgroup, main, nav, section {
+article, aside, dialog, figcaption, figure, header, hgroup, main, nav, section {
   display: block;
+}
+
+footer{
+  padding-top: 2rem;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family: 'Poppins', sans-serif;
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.5;
   color: #212529;
   text-align: left;
   background-color: #fff;
+  height: 100vh;
+  padding: 2rem;
 }
 
 [tabindex="-1"]:focus {
@@ -79,9 +85,18 @@ hr {
   overflow: visible;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1, h3, h4, h5, h6 {
   margin-top: 0;
   margin-bottom: 0.5rem;
+}
+
+h2{
+  padding:1rem 0 1rem;
+}
+
+.logo-container{
+  text-align: center;
+  padding-bottom: 1rem;
 }
 
 p {
@@ -216,8 +231,16 @@ svg:not(:root) {
 
 table {
   border-collapse: collapse;
+  /* border: 1px solid black; */
+  /* grid-row: 2 / span 3; */
+  border-radius: 2rem;
+  overflow: scroll;
 }
-
+thead th{
+  position: sticky;
+  /* top:0; */
+  background-color: rgb(209, 208, 208);
+}
 caption {
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
@@ -225,6 +248,8 @@ caption {
   text-align: left;
   caption-side: bottom;
 }
+
+
 
 th {
   text-align: inherit;
@@ -1671,6 +1696,8 @@ pre code {
   max-width: 100%;
   margin-bottom: 1rem;
   background-color: transparent;
+  overflow-y: scroll;
+  grid-row: 2 / span 3;;
 }
 
 .table th,
@@ -1707,6 +1734,13 @@ pre code {
   border: 1px solid #dee2e6;
 }
 
+.table-responsive{
+  border-radius: 10px;
+  overflow:scroll;
+  height: 70%;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  /* border-top: 2px solid black; */
+}
 .table-bordered thead th,
 .table-bordered thead td {
   border-bottom-width: 2px;
@@ -3967,11 +4001,13 @@ tbody.collapse.show {
 .navbar-brand {
   display: inline-block;
   padding-top: 0.3125rem;
+  padding-right: 1rem;
   padding-bottom: 0.3125rem;
   margin-right: 1rem;
   font-size: 1.25rem;
   line-height: inherit;
   white-space: nowrap;
+  /* background-color: #002752; */
 }
 
 .navbar-brand:hover, .navbar-brand:focus {
