@@ -4,6 +4,7 @@ import fetch from 'node-fetch';
 import hbs from 'hbs'
 import dotenv from 'dotenv'
 
+
 dotenv.config();
 
 const { API_KEY, PASSWORD, HOST_NAME, VERSION } = process.env;
@@ -61,7 +62,7 @@ app.get('/guide', function (req, res) {
 
 app.get('/order_status', function (req, res) {
     res.render('order_status', {
-        page: "Order Status"
+        page: "Notification Status"
     });
 })
 
@@ -143,8 +144,19 @@ app.get('/api/customers', async function (req, res) {
 app.post('/webhooks/orders/fulfilled', function (req, res) {
     const data = req.body;
     console.log(req.body);
+    // res.send(data);
+    // const items = [];
+    // const { contact_email, line_items, shipping_address } = data;
+    // const name = shipping_address.name;
+    // const phone = shipping_address.phone;
+    // line_items.forEach(item => {
+    //     items.push({ itemId: item.id, order: item.title })
+    // });
+    // console.log(contact_email, phone, items, name);
+    // res.send(data);
 })
 
 app.listen(port, function () {
     console.log('Server is up at port ' + port + '...');
 })
+

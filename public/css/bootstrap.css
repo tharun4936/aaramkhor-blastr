@@ -60,6 +60,8 @@ article, aside, dialog, figcaption, figure, header, hgroup, main, nav, section {
 
 footer{
   padding-top: 2rem;
+  bottom: 0;
+  position: fixed;
 }
 
 body {
@@ -70,7 +72,7 @@ body {
   line-height: 1.5;
   color: #212529;
   text-align: left;
-  background-color: #fff;
+  /* background: rgb(214, 213, 213); */
   height: 100vh;
   padding: 2rem;
 }
@@ -91,7 +93,7 @@ h1, h3, h4, h5, h6 {
 }
 
 h2{
-  padding:1rem 0 1rem;
+  padding: 2px 0 1rem;
 }
 
 .logo-container{
@@ -1737,7 +1739,7 @@ pre code {
 .table-responsive{
   border-radius: 10px;
   overflow:scroll;
-  height: 70%;
+  height: 75%;
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
   /* border-top: 2px solid black; */
 }
@@ -3904,6 +3906,7 @@ tbody.collapse.show {
   margin-bottom: -1px;
 }
 
+
 .nav-tabs .nav-link {
   border: 1px solid transparent;
   border-top-left-radius: 0.25rem;
@@ -4438,6 +4441,7 @@ tbody.collapse.show {
 .navbar-dark .navbar-nav .nav-link.show,
 .navbar-dark .navbar-nav .nav-link.active {
   color: #fff;
+  padding-right: 4px;
 }
 
 .navbar-dark .navbar-toggler {
