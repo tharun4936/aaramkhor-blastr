@@ -1,4 +1,8 @@
+const socket = io();
 
+socket.on('connect', function () {
+    console.log('Successfully connected!')
+})
 
 document.querySelector('h2').addEventListener('click', function () {
     console.log('clicked');

@@ -3,6 +3,9 @@ import express, { query } from 'express'
 import fetch from 'node-fetch';
 import hbs from 'hbs'
 import dotenv from 'dotenv'
+import { Server } from 'socket.io'
+import http from 'http';
+
 
 
 dotenv.config();
@@ -10,11 +13,12 @@ dotenv.config();
 const { API_KEY, PASSWORD, HOST_NAME, VERSION } = process.env;
 const __dirname = path.resolve()
 const app = express();
+const httpServer = http.createServer(app);
+const io = new Server(httpServer);
 const publicDirectoryPath = path.join(__dirname, './public');
 const viewsPath = path.join(__dirname, './templates/views');
 const partialsPath = path.join(__dirname, './templates/partials');
 const port = process.env.PORT || 3000;
-
 // console.log(viewsPath, partialsPath, publicDirectoryPath);
 app.set('view engine', 'hbs');
 app.set('views', viewsPath)
@@ -141,9 +145,11 @@ app.get('/api/customers', async function (req, res) {
     }
 })
 
-app.post('/webhooks/orders/fulfilled', function (req, res) {
+app.post('/webhooks/orders/created', function (req, res) {
     const data = req.body;
+    console.log('Showing all the created orders...')
     console.log(req.body);
+    res.status(200).send();
     // res.send(data);
     // const items = [];
     // const { contact_email, line_items, shipping_address } = data;
@@ -156,7 +162,31 @@ app.post('/webhooks/orders/fulfilled', function (req, res) {
     // res.send(data);
 })
 
-app.listen(port, function () {
+app.post('/webhooks/orders/fulfilled', function (req, res) {
+    const data = req.body;
+    console.log('Showing all the fulfilled orders...')
+    console.log(req.body);
+    res.status(200).send()
+    // res.send(data);
+    // const items = [];
+    // const { contact_email, line_items, shipping_address } = data;
+    // const name = shipping_address.name;
+    // const phone = shipping_address.phone;
+    // line_items.forEach(item => {
+    //     items.push({ itemId: item.id, order: item.title })
+    // });
+    // console.log(contact_email, phone, items, name);
+    // res.send(data);
+})
+
+
+io.on('connection', function (socket) {
+    console.log(`Client ${socket.id} connected successfully`);
+})
+
+httpServer.listen(port, function () {
     console.log('Server is up at port ' + port + '...');
 })
+
+
 
