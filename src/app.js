@@ -150,15 +150,6 @@ app.post('/webhooks/orders/created', function (req, res) {
     console.log('Showing all the created orders...')
     console.log(req.body);
     res.status(200).send();
-    // res.send(data);
-
-})
-
-app.post('/webhooks/orders/fulfilled', function (req, res) {
-    const data = req.body;
-    console.log('Showing all the fulfilled orders...')
-    console.log(req.body);
-    res.status(200).send()
     const items = [];
     const { contact_email, line_items, shipping_address } = data;
     const name = shipping_address.name;
@@ -173,6 +164,29 @@ app.post('/webhooks/orders/fulfilled', function (req, res) {
         contact_email,
         phone
     })
+    // res.send(data);
+
+})
+
+app.post('/webhooks/orders/fulfilled', function (req, res) {
+    const data = req.body;
+    console.log('Showing all the fulfilled orders...')
+    console.log(data);
+    res.status(200).send()
+    // const items = [];
+    // const { contact_email, line_items, shipping_address } = data;
+    // const name = shipping_address.name;
+    // const phone = shipping_address.phone;
+    // line_items.forEach(item => {
+    //     items.push({ itemId: item.id, order: item.title })
+    // });
+    // console.log(contact_email, phone, items, name);
+    // io.sockets.emit('updatedOrders', {
+    //     name,
+    //     items,
+    //     contact_email,
+    //     phone
+    // })
     // res.send(data);
     // const items = [];
     // const { contact_email, line_items, shipping_address } = data;
@@ -193,6 +207,7 @@ io.on('connection', function (socket) {
 httpServer.listen(port, function () {
     console.log('Server is up at port ' + port + '...');
 })
+
 
 
 
