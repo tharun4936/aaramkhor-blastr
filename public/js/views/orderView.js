@@ -1,36 +1,31 @@
 export default class orderView {
-    // parentEl = 
-    //ordersArray = [];
-    //table_name = '';
-
-    // constructor() {
-    //     console.log('orderTable object created')
-
-    // }
-    // generateMarkup(orders){
 
 
-    // }
+
     renderRows(orders) {
-        console.log(orders);
-        console.log(this.parentEl);
-        const markup = this.generateMarkup(orders)
-        console.log(markup)
-        this.parentEl.insertAdjacentHTML('afterend', markup)
+        const markup = this.generateMarkup(orders);
+        this.parentEl.insertAdjacentHTML('beforeend', markup)
     }
-    renderAll() {
-        this.ordersArray.forEach(orders => {
-            this.renderRow(orders);
-        });
-    }
+
     addOrders(order) {
         this.orderArray.push(order);
+
     }
-    setOrders() {
+
+    setLocalStorage() {
         localStorage.setItem(this.table_name, JSON.stringify(this.orderArray));
     }
-    getOrders() {
-        const data = localStorage.getItem(this.table_name);
-        this.orderArray = JSON.parse(data);
+
+    getLocalStorage() {
+        const data = JSON.parse(localStorage.getItem(this.table_name));
+        if (!data) return;
+        this.orderArray = data;
+
     }
+
+    resetOrders() {
+        localStorage.removeItem(this.table_name);
+        location.reload();
+    }
+
 }
