@@ -1,17 +1,22 @@
 import { readFile } from 'fs/promises';
 import path from 'path'
 import express from 'express'
-import hbs from 'hbs'
+import hbs, { create } from 'hbs'
 import dotenv from 'dotenv'
 import { Server } from 'socket.io'
 import Shopify from 'shopify-api-node';
 import http from 'http';
 import { GoogleSpreadsheet } from 'google-spreadsheet'
+import { google } from 'googleapis'
+import nodemailer from 'nodemailer';
+import credsMail from './credentialsMail.js';
 const creds = JSON.parse(
     await readFile(
         new URL('./credentials.json', import.meta.url)
     )
 );
+const OAuth2_client = new google.auth.OAuth2(credsMail.client_id, credsMail.client_secret);
+OAuth2_client.setCredentials({ refresh_token: credsMail.refresh_token })
 
 dotenv.config();
 
@@ -142,7 +147,7 @@ const getRawOrdersData = function (requestBody) {
         const { line_items, shipping_address, created_at } = requestBody;
 
         if (requestBody.contact_email) contact_email = requestBody.contact_email;
-        else contact_email = "Not Provided"
+        else contact_email = "Not Provided!"
 
         const name = shipping_address.name
 
@@ -205,6 +210,40 @@ const convertFromSpreadsheet = function (data) {
     return items;
 
 }
+
+const createTransporterObject = function () {
+    const accessToken = OAuth2_client.getAccessToken();
+    const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            type: 'OAuth2',
+            user: credsMail.user,
+            clientId: credsMail.client_id,
+            clientSecret: credsMail.client_secret,
+            refreshToken: credsMail.refresh_token,
+            accessToken: accessToken,
+        }
+    })
+    return transporter;
+}
+
+const sendEmailNotification = function (data, transporter) {
+
+    // const transporter = createTransporterObject();
+    const mailOptions = {
+        from: `${data.senderName} <${data.sender}>`,
+        to: data.receiver,
+        subject: data.subject,
+        html: data.templateMessage
+    }
+
+    transporter.sendMail(mailOptions, function (error, result) {
+        if (error) return console.log(error)
+        console.log(result)
+    })
+
+}
+
 
 
 app.get('', async function (req, res) {
@@ -302,6 +341,17 @@ app.post('/api/orders/orderswithtrackingnumber', async function (req, res) {
         const data = req.body;
         const updatedSpreadsheetData = convertFromSpreadsheet(data);
         console.log(updatedSpreadsheetData);
+        const transporter = createTransporterObject();
+        updatedSpreadsheetData.forEach(order => {
+            if (order.customer_email !== 'Not Provided!')
+                return sendEmailNotification({
+                    senderName: 'Tharun Ramachandran',
+                    sender: 'tharun4936@gmail.com',
+                    receiver: order.customer_email,
+                    subject: 'Your Order has been Processed',
+                    templateMessage: `<p>Your order ${order.order} ${order.order_id} has been processed. Track your order using the tracking number ${order.consignment_no} in the following link <a href="${order.tracking_link}">${order.tracking_link}</a></p>`,
+                }, transporter);
+        })
         const doc = await googleSpreadsheetInit();
         await populateStatusSheet(doc, updatedSpreadsheetData);
         res.status(200).send()
