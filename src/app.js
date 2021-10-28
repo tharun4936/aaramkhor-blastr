@@ -58,8 +58,9 @@ const fetchData = async function (resource, query = '') {
     }
 }
 
-const convertOrdersFromRawData = function (orders) {
+const convertFromRawOrdersData = function (orders) {
     const converted = [];
+    // console.log(orders);
     for (let i = 0; i < orders.items.length; i++) {
         converted.push({
             order_id: orders.items[i].itemId,
@@ -73,12 +74,15 @@ const convertOrdersFromRawData = function (orders) {
             tracking_link: TRACKING_LINK
         })
     }
+    console.log('convertedOrdersformRqawdata', converted)
     return converted;
 }
 
 const populateWorkspaceSheet = async function (doc, data) {
     try {
-        const spreadsheetData = convertOrdersFromRawData(data);
+        await doc.loadInfo()
+        const spreadsheetData = convertFromRawOrdersData(data);
+        // console.log(spreadsheetData)
         const workspaceSheet = doc.sheetsByTitle['Logistics'];
         for (let i = 0; i < spreadsheetData.length; i++) {
             // await doc.loadInfo();
@@ -99,26 +103,72 @@ const populateWorkspaceSheet = async function (doc, data) {
     }
 }
 
-const getRawOrdersCreationData = function (requestBody) {
-    const items = [];
-    const { line_items, shipping_address, created_at } = requestBody;
-    const contact_email = requestBody.contact_email ?? "Not Provided"
-    const name = shipping_address.name;
-    const phone = shipping_address.phone ?? "Not Provided!";
-    const dateArr = created_at.split('T')[0].split('-');
-    const date = `${dateArr[2]}/${dateArr[1]}/${dateArr[0]}`;
-    const time = created_at.split('T')[1];
-    line_items.forEach(item => {
-        items.push({ itemId: item.id, order: item.title, quantity: item.quantity })
-    });
-
-    return {
-        name,
-        items,
-        contact_email,
-        phone,
-        created_at: `${date} : ${time}`
+const populateStatusSheet = async function (doc, spreadsheetData) {
+    try {
+        await doc.loadInfo();
+        // console.log(spreadsheetData)
+        const statusSheet = doc.sheetsByTitle['Notification Status'];
+        for (let i = 0; i < spreadsheetData.length; i++) {
+            // await doc.loadInfo();
+            await statusSheet.addRow({
+                S_No: spreadsheetData[i].s_no,
+                Order_Number: String(spreadsheetData[i].order_id),
+                Order: spreadsheetData[i].order,
+                Order_Quantity: spreadsheetData[i].order_quantity,
+                Customer_Name: spreadsheetData[i].customer_name,
+                Customer_Phone: String(spreadsheetData[i].customer_phone),
+                Customer_Email: spreadsheetData[i].customer_email,
+                Tracking_Number: spreadsheetData[i].consignment_no,
+                Created_At: spreadsheetData[i].created_at,
+                Tracking_Link: spreadsheetData[i].tracking_link,
+                Mail_Status: spreadsheetData[i].mail_status,
+                Whatsapp_Status: spreadsheetData[i].whatsapp_status,
+                SMS_Status: spreadsheetData[i].sms_status,
+                Date_Modified: spreadsheetData[i].date_modified
+            })
+        }
+    } catch (err) {
+        throw err;
     }
+
+}
+
+const getRawOrdersData = function (requestBody) {
+    try {
+        let contact_email;
+        let phone;
+        const items = [];
+
+        const { line_items, shipping_address, created_at } = requestBody;
+
+        if (requestBody.contact_email) contact_email = requestBody.contact_email;
+        else contact_email = "Not Provided"
+
+        const name = shipping_address.name
+
+        if (shipping_address.phone) phone = shipping_address.phone
+        else phone = "Not Provided!";
+
+        const dateArr = created_at.split('T')[0].split('-');
+        const date = `${dateArr[2]}/${dateArr[1]}/${dateArr[0]}`;
+        const time = created_at.split('T')[1];
+
+        line_items.forEach(item => {
+            items.push({ itemId: item.id, order: item.title, quantity: item.quantity })
+        });
+
+        return {
+            name,
+            items,
+            contact_email,
+            phone,
+            created_at: `${date} : ${time}`
+        }
+
+    } catch (err) {
+        throw err;
+    }
+
 }
 
 const googleSpreadsheetInit = async function () {
@@ -131,6 +181,31 @@ const googleSpreadsheetInit = async function () {
         throw err;
     }
 }
+
+const convertFromSpreadsheet = function (data) {
+    const items = [];
+    for (let i = 0; i < data.s_no.length; i++) {
+        items.push({
+            s_no: data.s_no[i],
+            order_id: data.order_no[i],
+            order: data.order[i],
+            order_quantity: data.order_quantity[i],
+            customer_name: data.customer_name[i],
+            customer_phone: data.customer_phone[i],
+            customer_email: data.customer_email[i],
+            consignment_no: data.tracking_no[i],
+            created_at: data.created_at[i],
+            tracking_link: data.tracking_link[i],
+            mail_status: data.mail_status[i],
+            whatsapp_status: data.whatsapp_status[i],
+            sms_status: data.sms_status[i],
+            date_modified: data.date_modified[i]
+        })
+    }
+    return items;
+
+}
+
 
 app.get('', async function (req, res) {
 
@@ -204,25 +279,50 @@ app.get('/api/draft_orders', async function (req, res) {
 
 app.post('/webhooks/orders/created', async function (req, res) {
     // const data = req.body;
-    console.log('Showing all the created orders...')
-    console.log(req.body);
-    res.status(200).send();
-    const doc = await googleSpreadsheetInit();
-    // const workspaceSheet = doc.sheetsByTitle['Logistics'];
-    const data = getRawOrdersCreationData(req.body)
-    io.sockets.emit('updatedOrders', data);
-    await populateWorkspaceSheet(doc, data);
-
-    // res.send(data);
+    // console.log('Showing all the created orders...')
+    // console.log(req.body);
+    try {
+        const data = getRawOrdersData(req.body)
+        if (data.errors) throw new Error(data.errors)
+        const doc = await googleSpreadsheetInit();
+        // const workspaceSheet = doc.sheetsByTitle['Logistics'];
+        io.sockets.emit('updatedOrders', data);
+        // console.log('Webhoks route', data);
+        await populateWorkspaceSheet(doc, data);
+        res.status(200).send();
+    } catch (err) {
+        console.log(err.message);
+        res.status(404).send(err);
+    }
 
 })
 
-app.post('/webhooks/orders/fulfilled', function (req, res) {
-    const data = req.body;
-    console.log('Showing all the fulfilled orders...')
-    console.log(data);
-    res.status(200).send()
+app.post('/api/orders/orderswithtrackingnumber', async function (req, res) {
+    try {
+        const data = req.body;
+        const updatedSpreadsheetData = convertFromSpreadsheet(data);
+        console.log(updatedSpreadsheetData);
+        const doc = await googleSpreadsheetInit();
+        await populateStatusSheet(doc, updatedSpreadsheetData);
+        res.status(200).send()
+    }
+    catch (err) {
+        console.log(err.message);
+        res.status(400).send(err)
+    }
 
+})
+
+app.post('/webhooks/orders/fulfilled', async function (req, res) {
+    try {
+        const data = req.body;
+        console.log('Showing all the fulfilled orders...')
+        console.log(data);
+        res.status(200).send()
+    } catch (err) {
+        console.log(err.message)
+        res.status(404).send(err)
+    }
 })
 
 io.on('connection', function (socket) {
@@ -232,7 +332,5 @@ io.on('connection', function (socket) {
 httpServer.listen(port, () => {
     console.log('Server is up at port ' + port + '...');
 })
-
-
 
 
