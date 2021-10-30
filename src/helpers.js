@@ -1,4 +1,226 @@
-export default function emailMarkup(name, order, order_id, consignment_no) {
+import dotenv from 'dotenv'
+import Shopify from 'shopify-api-node';
+import { GoogleSpreadsheet } from 'google-spreadsheet'
+import { google } from 'googleapis'
+import nodemailer from 'nodemailer';
+import creds from './config/credentials.js'
+import credsMail from './config/credentialsMail.js';
+
+const OAuth2_client = new google.auth.OAuth2(credsMail.client_id, credsMail.client_secret);
+OAuth2_client.setCredentials({ refresh_token: credsMail.refresh_token })
+
+dotenv.config();
+
+const { API_KEY, PASSWORD, HOST_NAME, VERSION, SPREADSHEET_ID, TRACKING_LINK } = process.env;
+const shopify = new Shopify({
+    shopName: HOST_NAME,
+    apiKey: API_KEY,
+    password: PASSWORD,
+    apiVersion: VERSION
+});
+
+//dependencies: shopify object
+export const fetchData = async function (resource, query = '') {
+    try {
+        let data;
+        if (resource === 'orders')
+            data = await shopify.order.list();
+        else if (resource === 'customers')
+            data = await shopify.customer.list();
+        else if (resource === 'products')
+            data = await shopify.product.list();
+        else if (resource === 'draft_orders')
+            data = await shopify.draftOrder.list();
+        else throw new Error('Invalid resource')
+        return data;
+    } catch (err) {
+        throw err
+    }
+}
+
+// dependencies: TRACKING_LINK env variable
+// export const convertFromRawOrdersData = function (orders) {
+//     try {
+//         const converted = [];
+//         for (let i = 0; i < orders.items.length; i++) {
+//             converted.push({
+//                 order_id: orders.items[i].itemId,
+//                 order: orders.items[i].order,
+//                 order_quantity: orders.items[i].quantity,
+//                 customer_name: orders.name,
+//                 customer_phone: orders.phone,
+//                 customer_email: orders.contact_email,
+//                 created_at: orders.created_at,
+//                 consignment_no: '',
+//                 tracking_link: TRACKING_LINK
+//             })
+//         }
+//         // console.log('convertedOrdersformRqawdata', converted)
+//         return converted;
+//     } catch (err) {
+//         throw err;
+//     }
+
+// }
+
+
+//dependencioes: convertFromRawORdersData function 
+export const populateWorkspaceSheet = async function (doc, data) {
+    try {
+        await doc.loadInfo()
+        const workspaceSheet = doc.sheetsByTitle['Logistics'];
+        let items = "";
+        let itemsQuant = "";
+        for (let i = 0; i < data.items.length; i++) {
+            items += data.items[i].order;
+            items += ' ~ ';
+            itemsQuant += String(data.items[i].quantity);
+            itemsQuant += ' ~ '
+        }
+        items = items.slice(0, -2);
+        itemsQuant = itemsQuant.slice(0, -2)
+        await workspaceSheet.addRow({
+            Order_Number: data.order_id,
+            Order: items,
+            Order_Quantity: itemsQuant,
+            Customer_Name: data.name,
+            Customer_Phone: String(data.phone),
+            Customer_Email: data.contact_email,
+            Tracking_Number: '',
+            Created_At: data.created_at,
+            Tracking_Link: TRACKING_LINK
+        })
+
+    } catch (err) {
+        throw err;
+    }
+}
+
+
+export const populateStatusSheet = async function (doc, spreadsheetData) {
+    try {
+        await doc.loadInfo();
+        // console.log(spreadsheetData)
+        const statusSheet = doc.sheetsByTitle['Notification Status'];
+        for (let i = 0; i < spreadsheetData.length; i++) {
+            // await doc.loadInfo();
+            await statusSheet.addRow({
+                S_No: spreadsheetData[i].s_no,
+                Order_Number: String(spreadsheetData[i].order_id),
+                Order: spreadsheetData[i].order,
+                Order_Quantity: spreadsheetData[i].order_quantity,
+                Customer_Name: spreadsheetData[i].customer_name,
+                Customer_Phone: String(spreadsheetData[i].customer_phone),
+                Customer_Email: spreadsheetData[i].customer_email,
+                Tracking_Number: spreadsheetData[i].consignment_no,
+                Created_At: spreadsheetData[i].created_at,
+                Tracking_Link: spreadsheetData[i].tracking_link,
+                Mail_Status: spreadsheetData[i].mail_status,
+                Whatsapp_Status: spreadsheetData[i].whatsapp_status,
+                SMS_Status: spreadsheetData[i].sms_status,
+                Date_Modified: spreadsheetData[i].date_modified
+            })
+        }
+    } catch (err) {
+        throw err;
+    }
+
+}
+
+
+export const getRawOrdersData = function (requestBody) {
+    try {
+        let contact_email;
+        let phone;
+        const items = [];
+
+        const { line_items, shipping_address, created_at } = requestBody;
+        const order_id = String(requestBody.id);
+
+        if (requestBody.contact_email) contact_email = requestBody.contact_email;
+        else contact_email = "Not Provided!"
+
+        const name = shipping_address.name
+
+        if (shipping_address.phone) phone = shipping_address.phone
+        else phone = "Not Provided!";
+
+        const dateArr = created_at.split('T')[0].split('-');
+        const date = `${dateArr[2]}/${dateArr[1]}/${dateArr[0]}`;
+        const time = created_at.split('T')[1];
+
+        line_items.forEach(item => {
+            items.push({ order: item.title, quantity: item.quantity })
+        });
+
+        return {
+            order_id,
+            name,
+            items,
+            contact_email,
+            phone,
+            created_at: `${date} : ${time}`
+        }
+
+    } catch (err) {
+        throw err;
+    }
+
+}
+
+// dependencies: google-spreadsheet package
+export const googleSpreadsheetInit = async function () {
+    try {
+        const doc = new GoogleSpreadsheet(SPREADSHEET_ID);
+        await doc.useServiceAccountAuth(creds);
+        await doc.loadInfo();
+        return doc;
+    } catch (err) {
+        throw err;
+    }
+}
+
+// dependencies: nodemailer module and client object
+export const createTransporterObject = function () {
+    try {
+        const accessToken = OAuth2_client.getAccessToken();
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                type: 'OAuth2',
+                user: credsMail.user,
+                clientId: credsMail.client_id,
+                clientSecret: credsMail.client_secret,
+                refreshToken: credsMail.refresh_token,
+                accessToken: accessToken,
+            }
+        })
+        return transporter;
+    } catch (err) {
+        throw err;
+    }
+
+}
+
+export const sendEmailNotification = async function (data, transporter) {
+
+    try {
+        const mailOptions = {
+            from: `${data.senderName} <${data.sender}>`,
+            to: data.receiver,
+            subject: data.subject,
+            html: data.templateMessage
+        }
+        const result = await transporter.sendMail(mailOptions)
+        console.log(result);
+
+    } catch (err) {
+        throw err
+    }
+
+}
+
+export function emailMarkup(name, order, order_id, consignment_no) {
     return `<!DOCTYPE html>
     <html>
     
