@@ -1,7 +1,8 @@
-import { readFile } from 'fs/promises';
+
 import path from 'path'
 import express from 'express'
-import hbs, { create } from 'hbs'
+import validator from 'validator';
+import hbs from 'hbs'
 import dotenv from 'dotenv'
 import { Server } from 'socket.io'
 import Shopify from 'shopify-api-node';
@@ -9,12 +10,10 @@ import http from 'http';
 import { GoogleSpreadsheet } from 'google-spreadsheet'
 import { google } from 'googleapis'
 import nodemailer from 'nodemailer';
+import creds from './credentials.js'
 import credsMail from './credentialsMail.js';
-const creds = JSON.parse(
-    await readFile(
-        new URL('./credentials.json', import.meta.url)
-    )
-);
+import emailMarkup from './emailMarkup.js';
+
 const OAuth2_client = new google.auth.OAuth2(credsMail.client_id, credsMail.client_secret);
 OAuth2_client.setCredentials({ refresh_token: credsMail.refresh_token })
 
@@ -64,23 +63,27 @@ const fetchData = async function (resource, query = '') {
 }
 
 const convertFromRawOrdersData = function (orders) {
-    const converted = [];
-    // console.log(orders);
-    for (let i = 0; i < orders.items.length; i++) {
-        converted.push({
-            order_id: orders.items[i].itemId,
-            order: orders.items[i].order,
-            order_quantity: orders.items[i].quantity,
-            customer_name: orders.name,
-            customer_phone: orders.phone,
-            customer_email: orders.contact_email,
-            created_at: orders.created_at,
-            consignment_no: '',
-            tracking_link: TRACKING_LINK
-        })
+    try {
+        const converted = [];
+        for (let i = 0; i < orders.items.length; i++) {
+            converted.push({
+                order_id: orders.items[i].itemId,
+                order: orders.items[i].order,
+                order_quantity: orders.items[i].quantity,
+                customer_name: orders.name,
+                customer_phone: orders.phone,
+                customer_email: orders.contact_email,
+                created_at: orders.created_at,
+                consignment_no: '',
+                tracking_link: TRACKING_LINK
+            })
+        }
+        console.log('convertedOrdersformRqawdata', converted)
+        return converted;
+    } catch (err) {
+        throw err;
     }
-    console.log('convertedOrdersformRqawdata', converted)
-    return converted;
+
 }
 
 const populateWorkspaceSheet = async function (doc, data) {
@@ -97,7 +100,7 @@ const populateWorkspaceSheet = async function (doc, data) {
                 Order_Quantity: spreadsheetData[i].order_quantity,
                 Customer_Name: spreadsheetData[i].customer_name,
                 Customer_Phone: String(spreadsheetData[i].customer_phone),
-                Email: spreadsheetData[i].customer_email,
+                Customer_Email: spreadsheetData[i].customer_email,
                 Tracking_Number: spreadsheetData[i].consignment_no,
                 Created_At: spreadsheetData[i].created_at,
                 Tracking_Link: spreadsheetData[i].tracking_link
@@ -187,60 +190,42 @@ const googleSpreadsheetInit = async function () {
     }
 }
 
-const convertFromSpreadsheet = function (data) {
-    const items = [];
-    for (let i = 0; i < data.s_no.length; i++) {
-        items.push({
-            s_no: data.s_no[i],
-            order_id: data.order_no[i],
-            order: data.order[i],
-            order_quantity: data.order_quantity[i],
-            customer_name: data.customer_name[i],
-            customer_phone: data.customer_phone[i],
-            customer_email: data.customer_email[i],
-            consignment_no: data.tracking_no[i],
-            created_at: data.created_at[i],
-            tracking_link: data.tracking_link[i],
-            mail_status: data.mail_status[i],
-            whatsapp_status: data.whatsapp_status[i],
-            sms_status: data.sms_status[i],
-            date_modified: data.date_modified[i]
-        })
-    }
-    return items;
-
-}
-
 const createTransporterObject = function () {
-    const accessToken = OAuth2_client.getAccessToken();
-    const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-            type: 'OAuth2',
-            user: credsMail.user,
-            clientId: credsMail.client_id,
-            clientSecret: credsMail.client_secret,
-            refreshToken: credsMail.refresh_token,
-            accessToken: accessToken,
-        }
-    })
-    return transporter;
-}
-
-const sendEmailNotification = function (data, transporter) {
-
-    // const transporter = createTransporterObject();
-    const mailOptions = {
-        from: `${data.senderName} <${data.sender}>`,
-        to: data.receiver,
-        subject: data.subject,
-        html: data.templateMessage
+    try {
+        const accessToken = OAuth2_client.getAccessToken();
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                type: 'OAuth2',
+                user: credsMail.user,
+                clientId: credsMail.client_id,
+                clientSecret: credsMail.client_secret,
+                refreshToken: credsMail.refresh_token,
+                accessToken: accessToken,
+            }
+        })
+        return transporter;
+    } catch (err) {
+        throw err;
     }
 
-    transporter.sendMail(mailOptions, function (error, result) {
-        if (error) return console.log(error)
-        console.log(result)
-    })
+}
+
+const sendEmailNotification = async function (data, transporter) {
+
+    try {
+        const mailOptions = {
+            from: `${data.senderName} <${data.sender}>`,
+            to: data.receiver,
+            subject: data.subject,
+            html: data.templateMessage
+        }
+        const result = await transporter.sendMail(mailOptions)
+        console.log(result);
+
+    } catch (err) {
+        throw err
+    }
 
 }
 
@@ -330,7 +315,7 @@ app.post('/webhooks/orders/created', async function (req, res) {
         await populateWorkspaceSheet(doc, data);
         res.status(200).send();
     } catch (err) {
-        console.log(err.message);
+        console.log(err);
         res.status(404).send(err);
     }
 
@@ -339,25 +324,26 @@ app.post('/webhooks/orders/created', async function (req, res) {
 app.post('/api/orders/orderswithtrackingnumber', async function (req, res) {
     try {
         const data = req.body;
-        const updatedSpreadsheetData = convertFromSpreadsheet(data);
-        console.log(updatedSpreadsheetData);
+        console.log(data);
         const transporter = createTransporterObject();
-        updatedSpreadsheetData.forEach(order => {
-            if (order.customer_email !== 'Not Provided!')
-                return sendEmailNotification({
+        data.forEach(order => {
+            if (validator.isEmail(order.customer_email)) {
+                sendEmailNotification({
                     senderName: 'Tharun Ramachandran',
                     sender: 'tharun4936@gmail.com',
                     receiver: order.customer_email,
                     subject: 'Your Order has been Processed',
-                    templateMessage: `<p>Your order ${order.order} ${order.order_id} has been processed. Track your order using the tracking number ${order.consignment_no} in the following link <a href="${order.tracking_link}">${order.tracking_link}</a></p>`,
+                    templateMessage: emailMarkup(order.customer_name, order.order, order.order_id, order.consignment_no),
                 }, transporter);
+                order.mail_status = 'Sent';
+            }
         })
         const doc = await googleSpreadsheetInit();
-        await populateStatusSheet(doc, updatedSpreadsheetData);
+        await populateStatusSheet(doc, data);
         res.status(200).send()
     }
     catch (err) {
-        console.log(err.message);
+        console.log(err);
         res.status(400).send(err)
     }
 
