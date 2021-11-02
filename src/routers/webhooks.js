@@ -37,4 +37,34 @@ router.post('/webhooks/orders/fulfilled', async function (req, res) {
     }
 })
 
+router.post('/webhooks/sms/incoming', function (req, res) {
+    try {
+        console.log(req);
+        res.status(200).send()
+
+    } catch (err) {
+
+    }
+})
+
+router.post('/webhooks/sms/status', function (req, res) {
+    try {
+        console.log(req.body);
+        res.status(200).send()
+
+    } catch (err) {
+
+    }
+})
+
+router.post('/webhooks/sms/status/fallback', function (req, res) {
+    try {
+        console.log(req.body);
+        res.status(200).send()
+
+    } catch (err) {
+
+    }
+})
+
 export default router;

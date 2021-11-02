@@ -195,6 +195,7 @@ export const createTransporterObject = function () {
                 accessToken: accessToken,
             }
         })
+        console.log("BUG")
         return transporter;
     } catch (err) {
         throw err;
