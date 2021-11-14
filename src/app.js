@@ -26,7 +26,7 @@ hbs.registerPartials(partialsPath)
 
 app.use(express.static(publicDirectoryPath))
 app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
+// app.use(express.urlencoded({ extended: true }))
 app.use(APIRouter);
 app.use(WebhookRouter);
 
@@ -63,4 +63,9 @@ httpServer.listen(port, () => {
     console.log('Server is up at port ' + port + '...');
 })
 
+
+app.use(function (req, res, next) {
+    res.status(404).send("Error 404. Page Not Found:(");
+    next();
+})
 

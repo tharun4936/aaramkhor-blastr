@@ -132,12 +132,18 @@ export const getRawOrdersData = function (requestBody) {
     try {
         let contact_email;
         let phone;
+        let order_id;
         const items = [];
 
         const { line_items, shipping_address, created_at } = requestBody;
-        const order_id = String(requestBody.id);
+        if (requestBody.customer.last_order_name)
+            order_id = requestBody.customer.last_order_name.slice(1);
+        else
+            order_id = String(requestBody.id);
 
-        if (requestBody.contact_email) contact_email = requestBody.contact_email;
+        if (requestBody.contact_email) {
+            contact_email = requestBody.contact_email;
+        }
         else contact_email = "Not Provided!"
 
         const name = shipping_address.name
@@ -185,6 +191,8 @@ export const createTransporterObject = function () {
     try {
         const accessToken = OAuth2_client.getAccessToken();
         const transporter = nodemailer.createTransport({
+            pool: true,
+            maxMessages: Infinity,
             service: "gmail",
             auth: {
                 type: 'OAuth2',
@@ -193,9 +201,9 @@ export const createTransporterObject = function () {
                 clientSecret: credsMail.client_secret,
                 refreshToken: credsMail.refresh_token,
                 accessToken: accessToken,
-            }
+            },
         })
-        console.log("BUG")
+
         return transporter;
     } catch (err) {
         throw err;
@@ -213,7 +221,7 @@ export const sendEmailNotification = async function (data, transporter) {
             html: data.templateMessage
         }
         const result = await transporter.sendMail(mailOptions)
-        console.log(result);
+        return result;
 
     } catch (err) {
         throw err
@@ -291,7 +299,7 @@ export function emailMarkup(name, order, order_id, consignment_no) {
                                                                                                         <div>
                                                                                                             <h1
                                                                                                                 style="text-align:center">
-                                                                                                                Aaramkhor
+                                                                                                                Aaramkhor Delivery Information
                                                                                                             </h1>
                                                                                                             <div></div>
                                                                                                         </div>
@@ -321,20 +329,10 @@ export function emailMarkup(name, order, order_id, consignment_no) {
                                                                                                                 <br></div>
                                                                                                                 <div
                                                                                                                     style="font-family:inherit;text-align:inherit">
-                                                                                                                    Your Order (${order}) from Aaramkhor with Order number: ${order_id} has been dispatched . You can track your order by clicking on the below link using the consignment number: ${consignment_no} 
-                                                                                                                </div>
-                                                                                                                <div
-                                                                                                                    style="font-family:inherit;text-align:inherit">
-                                                                                                                    <br></div>
-                                                                                                                    <div
-                                                                                                                        style="font-family:inherit;text-align:inherit">
-                                                                                                                        <a href="https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx"
-                                                                                                                            target="_blank">Track
-                                                                                                                            Consignment
-                                                                                                                            (indiapost.gov.in)</a>
-                                                                                                                    </div>
-                                                                                                                    <div>
-                                                                                                                    </div>
+                                                                                                                    Your order(Order No. ${order_id}) has been shipped via IndiaPost with tracking consignment number ${consignment_no}. You can track the same on <a href="https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx"
+                                                                                                                    target="_blank">Track
+                                                                                                                    Consignment
+                                                                                                                    (indiapost.gov.in)</a>. In case of any issues with delivery, please mail with your order ID to <a target="_blank" href="https://mail.google.com/">shirtonomics@gmail.com</a>.
                                                                                                                 </div>
                                                                                                     </td>
                                                                                                 </tr>
