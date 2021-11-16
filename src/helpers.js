@@ -3,12 +3,11 @@ import Shopify from 'shopify-api-node';
 import { GoogleSpreadsheet } from 'google-spreadsheet'
 import { google } from 'googleapis'
 import nodemailer from 'nodemailer';
-import creds from './config/credentials.js'
 import unirest from 'unirest';
 
 dotenv.config();
 
-const { API_KEY, PASSWORD, HOST_NAME, VERSION, SPREADSHEET_ID, TRACKING_LINK, SMS_API_AUTH_KEY, SMS_API_SENDER_ID, SMS_API_MESSAGE_ID, SMS_API_URL, GMAIL_API_USER, GMAIL_API_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN } = process.env;
+const { API_KEY, PASSWORD, HOST_NAME, VERSION, SPREADSHEET_ID, TRACKING_LINK, SMS_API_AUTH_KEY, SMS_API_SENDER_ID, SMS_API_MESSAGE_ID, SMS_API_URL, GMAIL_API_USER, GMAIL_API_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN, GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY } = process.env;
 
 const OAuth2_client = new google.auth.OAuth2(GMAIL_API_CLIENT_ID, GMAIL_CLIENT_SECRET);
 OAuth2_client.setCredentials({ refresh_token: GMAIL_REFRESH_TOKEN })
@@ -199,11 +198,14 @@ export const getRawOrdersData = function (requestBody) {
 
 }
 
-// dependencies: google-spreadsheet package
+// dependencies: google-spreadsheet package .
 export const googleSpreadsheetInit = async function () {
     try {
         const doc = new GoogleSpreadsheet(SPREADSHEET_ID);
-        await doc.useServiceAccountAuth(creds);
+        await doc.useServiceAccountAuth({
+            client_email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+            private_key: GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+        });
         await doc.loadInfo();
         return doc;
     } catch (err) {
