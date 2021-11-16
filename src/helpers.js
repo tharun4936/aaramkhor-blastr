@@ -275,6 +275,17 @@ export const sendSMSNotification = async function (order) {
 
 }
 
+export const checkWalletBalance = async function () {
+    const result = await unirest.post("https://www.fast2sms.com/dev/wallet").headers({
+        "authorization": SMS_API_AUTH_KEY
+    });
+
+    if (result.body.return === true) {
+        return result.body.wallet;
+    }
+
+}
+
 export function emailMarkup(name, order, order_id, consignment_no) {
     return `<!DOCTYPE html>
     <html>

@@ -1,7 +1,8 @@
 import unirest from "unirest";
 import express from 'express';
-import { fetchData, populateEmailStatusSheet, populateSMSStatusSheet, googleSpreadsheetInit, createTransporterObject, sendEmailNotification, emailMarkup, sendSMSNotification } from '../helpers.js'
+import { fetchData, populateEmailStatusSheet, populateSMSStatusSheet, googleSpreadsheetInit, createTransporterObject, sendEmailNotification, emailMarkup, sendSMSNotification, checkWalletBalance } from '../helpers.js'
 import validator from 'validator';
+import chalk from "chalk";
 
 const router = new express.Router();
 
@@ -73,11 +74,12 @@ router.post('/api/orders/sendemail', async function (req, res) {
                         flag++;
                         if (result.accepted.includes(order.customer_email)) {
                             order.mail_status = 'Sent';
-                            console.log(order.order_id + '--------------' + order.customer_email + '--------------' + 'Sent');
+                            // console.log(order.order_id + '--------------' + order.customer_email + '--------------' + 'Sent');
+                            console.log(chalk`{yellow ${order.order_id}} ------ ${order.customer_email} ------ {green Sent}`)
                             mailsSent++;
                         }
                         else {
-                            console.log(order_id + '--------------' + order.customer_email + '--------------' + 'Not Sent');
+                            console.log(chalk`{yellow ${order.order_id}} ------ ${order.customer_email} ------ {red Not Sent}`)
                         }
                         if (flag === totalNoOfMails) {
                             console.log(`\n${mailsSent} of ${totalNoOfMails} mails sent!\n`);
@@ -105,14 +107,10 @@ router.post('/api/orders/sendemail', async function (req, res) {
 router.post('/api/orders/sendsms', async function (req, res) {
     try {
         const doc = await googleSpreadsheetInit();
-        const request = unirest("GET", "https://www.fast2sms.com/dev/bulkV2");
         const data = req.body.data;
         let sent = 0;
         let flag = 0;
         console.log('SMS Status\n----------\n');
-        request.headers({
-            "cache-control": "no-cache"
-        });
         data.forEach((order) => {
 
             sendSMSNotification({
@@ -124,13 +122,16 @@ router.post('/api/orders/sendsms', async function (req, res) {
                 feedback_email: 'shirtonomics@gmail.com'
             }).then(result => {
                 flag++;
-                console.log(`${order.order_id} -------- ${order.customer_phone} -------- ${result.message}`);
                 if (result.message.includes('SMS sent successfully.')) {
                     sent++;
+                    console.log(chalk`{yellow ${order.order_id}} ------ ${order.customer_phone} ------ {green ${result.message}}`)
                     order.sms_status = 'Sent';
                 }
                 if (flag === data.length) {
-                    console.log(`\n${sent} of ${flag} sent!\n`);
+                    console.log(`\n${sent} of ${flag} sent!`);
+                    checkWalletBalance().then(wallet => {
+                        console.log(chalk`Wallet balance: {green ${wallet}}`);
+                    })
                     populateSMSStatusSheet(doc, data);
                 }
             })
