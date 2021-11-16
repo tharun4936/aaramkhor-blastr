@@ -11,7 +11,7 @@ dotenv.config();
 
 const { API_KEY, PASSWORD, HOST_NAME, VERSION, SPREADSHEET_ID, TRACKING_LINK, SMS_API_AUTH_KEY, SMS_API_SENDER_ID, SMS_API_MESSAGE_ID, SMS_API_URL } = process.env;
 
-const smsRequest = unirest.get(SMS_API_URL);
+
 
 const OAuth2_client = new google.auth.OAuth2(credsMail.client_id, credsMail.client_secret);
 OAuth2_client.setCredentials({ refresh_token: credsMail.refresh_token })
@@ -260,7 +260,7 @@ export const sendEmailNotification = async function (data, transporter) {
 
 export const sendSMSNotification = async function (order) {
 
-    const result = await smsRequest.headers({
+    const result = await unirest.get(SMS_API_URL).headers({
         "cache-control": "no-cache"
     }).query({
         "authorization": SMS_API_AUTH_KEY,
