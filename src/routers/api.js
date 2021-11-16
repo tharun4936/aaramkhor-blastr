@@ -1,4 +1,3 @@
-import unirest from "unirest";
 import express from 'express';
 import { fetchData, populateEmailStatusSheet, populateSMSStatusSheet, googleSpreadsheetInit, createTransporterObject, sendEmailNotification, emailMarkup, sendSMSNotification, checkWalletBalance } from '../helpers.js'
 import validator from 'validator';
@@ -73,7 +72,6 @@ router.post('/api/orders/sendemail', async function (req, res) {
                         flag++;
                         if (result.accepted.includes(order.customer_email)) {
                             order.mail_status = 'Sent';
-                            // console.log(order.order_id + '--------------' + order.customer_email + '--------------' + 'Sent');
                             console.log(chalk`{yellow ${order.order_id}} ------ ${order.customer_email} ------ {green Sent}`)
                             mailsSent++;
                         }
@@ -84,21 +82,17 @@ router.post('/api/orders/sendemail', async function (req, res) {
                             console.log(`\n${mailsSent} of ${totalNoOfMails} mails sent!\n`);
                             populateEmailStatusSheet(doc, data);
                         }
-
-                        // console.log(order)
                     })
                     .catch(err => {
-                        throw err;
+                        console.log(err.message);
                     });
-
-                // order.mail_status = 'Sent';
             }
         })
 
         res.status(200).send()
     }
     catch (err) {
-        console.log(err);
+        console.log(err.message);
         res.status(400).send(err)
     }
 })
@@ -133,10 +127,13 @@ router.post('/api/orders/sendsms', async function (req, res) {
                     })
                     populateSMSStatusSheet(doc, data);
                 }
+            }).catch(err => {
+                console.log(err.message);
             })
         })
         res.status(200).send();
     } catch (err) {
+        console.log(err.message)
         res.status(400).send();
     }
 })

@@ -6,8 +6,6 @@ import http from 'http';
 import APIRouter from './routers/api.js'
 import WebhookRouter from './routers/webhooks.js'
 
-// import socket_instance from './helpers.js'
-// socket_instance(io)
 
 const __dirname = path.resolve()
 const app = express();
@@ -26,7 +24,6 @@ hbs.registerPartials(partialsPath)
 
 app.use(express.static(publicDirectoryPath))
 app.use(express.json())
-// app.use(express.urlencoded({ extended: true }))
 app.use(APIRouter);
 app.use(WebhookRouter);
 

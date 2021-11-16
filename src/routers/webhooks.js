@@ -4,9 +4,7 @@ import { populateWorkspaceSheet, getRawOrdersData, googleSpreadsheetInit } from 
 const router = new express.Router();
 
 router.post('/webhooks/orders/created', async function (req, res) {
-    // const data = req.body;
-    // console.log('Showing all the created orders...')
-    // console.log(req.body);
+
     try {
         console.log(req.body)
         const data = getRawOrdersData(req.body)
@@ -14,9 +12,7 @@ router.post('/webhooks/orders/created', async function (req, res) {
         const doc = await googleSpreadsheetInit();
         await populateWorkspaceSheet(doc, data);
         const io = req.app.get("io")
-        // const workspaceSheet = doc.sheetsByTitle['Logistics'];
         io.sockets.emit('updatedOrders', data);
-        // console.log('Webhoks route', data);
         res.status(200).send();
     } catch (err) {
         console.log(err);

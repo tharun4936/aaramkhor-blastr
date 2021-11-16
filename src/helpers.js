@@ -4,18 +4,14 @@ import { GoogleSpreadsheet } from 'google-spreadsheet'
 import { google } from 'googleapis'
 import nodemailer from 'nodemailer';
 import creds from './config/credentials.js'
-import credsMail from './config/credentialsMail.js';
 import unirest from 'unirest';
 
 dotenv.config();
 
-const { API_KEY, PASSWORD, HOST_NAME, VERSION, SPREADSHEET_ID, TRACKING_LINK, SMS_API_AUTH_KEY, SMS_API_SENDER_ID, SMS_API_MESSAGE_ID, SMS_API_URL } = process.env;
+const { API_KEY, PASSWORD, HOST_NAME, VERSION, SPREADSHEET_ID, TRACKING_LINK, SMS_API_AUTH_KEY, SMS_API_SENDER_ID, SMS_API_MESSAGE_ID, SMS_API_URL, GMAIL_API_USER, GMAIL_API_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN } = process.env;
 
-
-
-const OAuth2_client = new google.auth.OAuth2(credsMail.client_id, credsMail.client_secret);
-OAuth2_client.setCredentials({ refresh_token: credsMail.refresh_token })
-
+const OAuth2_client = new google.auth.OAuth2(GMAIL_API_CLIENT_ID, GMAIL_CLIENT_SECRET);
+OAuth2_client.setCredentials({ refresh_token: GMAIL_REFRESH_TOKEN })
 
 const shopify = new Shopify({
     shopName: HOST_NAME,
@@ -225,10 +221,10 @@ export const createTransporterObject = function () {
             service: "gmail",
             auth: {
                 type: 'OAuth2',
-                user: credsMail.user,
-                clientId: credsMail.client_id,
-                clientSecret: credsMail.client_secret,
-                refreshToken: credsMail.refresh_token,
+                user: GMAIL_API_USER,
+                clientId: GMAIL_API_CLIENT_ID,
+                clientSecret: GMAIL_CLIENT_SECRET,
+                refreshToken: GMAIL_REFRESH_TOKEN,
                 accessToken: accessToken,
             },
         })
@@ -260,28 +256,36 @@ export const sendEmailNotification = async function (data, transporter) {
 
 export const sendSMSNotification = async function (order) {
 
-    const result = await unirest.get(SMS_API_URL).headers({
-        "cache-control": "no-cache"
-    }).query({
-        "authorization": SMS_API_AUTH_KEY,
-        "sender_id": SMS_API_SENDER_ID,
-        "message": SMS_API_MESSAGE_ID,
-        "variables_values": `${order.order_id}|${order.service}|${order.consignment_no}|${order.service_url}|${order.feedback_email}|`,
-        "route": "dlt",
-        "numbers": `${order.customer_phone}`,
-    })
+    try {
+        const result = await unirest.get(SMS_API_URL).headers({
+            "cache-control": "no-cache"
+        }).query({
+            "authorization": SMS_API_AUTH_KEY,
+            "sender_id": SMS_API_SENDER_ID,
+            "message": SMS_API_MESSAGE_ID,
+            "variables_values": `${order.order_id}|${order.service}|${order.consignment_no}|${order.service_url}|${order.feedback_email}|`,
+            "route": "dlt",
+            "numbers": `${order.customer_phone}`,
+        })
 
-    return result.body;
+        return result.body;
+    } catch (err) {
+        throw err;
+    }
 
 }
 
 export const checkWalletBalance = async function () {
-    const result = await unirest.post("https://www.fast2sms.com/dev/wallet").headers({
-        "authorization": SMS_API_AUTH_KEY
-    });
+    try {
+        const result = await unirest.post("https://www.fast2sms.com/dev/wallet").headers({
+            "authorization": SMS_API_AUTH_KEY
+        });
 
-    if (result.body.return === true) {
-        return result.body.wallet;
+        if (result.body.return === true) {
+            return result.body.wallet;
+        }
+    } catch (err) {
+        throw err;
     }
 
 }
