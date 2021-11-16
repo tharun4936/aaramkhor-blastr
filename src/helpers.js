@@ -5,13 +5,18 @@ import { google } from 'googleapis'
 import nodemailer from 'nodemailer';
 import creds from './config/credentials.js'
 import credsMail from './config/credentialsMail.js';
+import unirest from 'unirest';
+
+dotenv.config();
+
+const { API_KEY, PASSWORD, HOST_NAME, VERSION, SPREADSHEET_ID, TRACKING_LINK, SMS_API_AUTH_KEY, SMS_API_SENDER_ID, SMS_API_MESSAGE_ID, SMS_API_URL } = process.env;
+
+const smsRequest = unirest.get(SMS_API_URL);
 
 const OAuth2_client = new google.auth.OAuth2(credsMail.client_id, credsMail.client_secret);
 OAuth2_client.setCredentials({ refresh_token: credsMail.refresh_token })
 
-dotenv.config();
 
-const { API_KEY, PASSWORD, HOST_NAME, VERSION, SPREADSHEET_ID, TRACKING_LINK } = process.env;
 const shopify = new Shopify({
     shopName: HOST_NAME,
     apiKey: API_KEY,
@@ -97,11 +102,11 @@ export const populateWorkspaceSheet = async function (doc, data) {
 }
 
 
-export const populateStatusSheet = async function (doc, spreadsheetData) {
+export const populateEmailStatusSheet = async function (doc, spreadsheetData) {
     try {
         await doc.loadInfo();
         // console.log(spreadsheetData)
-        const statusSheet = doc.sheetsByTitle['Notification Status'];
+        const statusSheet = doc.sheetsByTitle['Email Status'];
         for (let i = 0; i < spreadsheetData.length; i++) {
             // await doc.loadInfo();
             await statusSheet.addRow({
@@ -116,7 +121,32 @@ export const populateStatusSheet = async function (doc, spreadsheetData) {
                 Created_At: spreadsheetData[i].created_at,
                 Tracking_Link: spreadsheetData[i].tracking_link,
                 Mail_Status: spreadsheetData[i].mail_status,
-                Whatsapp_Status: spreadsheetData[i].whatsapp_status,
+                Date_Modified: spreadsheetData[i].date_modified
+            })
+        }
+    } catch (err) {
+        throw err;
+    }
+}
+
+export const populateSMSStatusSheet = async function (doc, spreadsheetData) {
+    try {
+        await doc.loadInfo();
+        // console.log(spreadsheetData)
+        const statusSheet = doc.sheetsByTitle['SMS Status'];
+        for (let i = 0; i < spreadsheetData.length; i++) {
+            // await doc.loadInfo();
+            await statusSheet.addRow({
+                S_No: spreadsheetData[i].s_no,
+                Order_Number: String(spreadsheetData[i].order_id),
+                Order: spreadsheetData[i].order,
+                Order_Quantity: spreadsheetData[i].order_quantity,
+                Customer_Name: spreadsheetData[i].customer_name,
+                Customer_Phone: String(spreadsheetData[i].customer_phone),
+                Customer_Email: spreadsheetData[i].customer_email,
+                Tracking_Number: spreadsheetData[i].consignment_no,
+                Created_At: spreadsheetData[i].created_at,
+                Tracking_Link: spreadsheetData[i].tracking_link,
                 SMS_Status: spreadsheetData[i].sms_status,
                 Date_Modified: spreadsheetData[i].date_modified
             })
@@ -124,7 +154,6 @@ export const populateStatusSheet = async function (doc, spreadsheetData) {
     } catch (err) {
         throw err;
     }
-
 }
 
 
@@ -226,6 +255,23 @@ export const sendEmailNotification = async function (data, transporter) {
     } catch (err) {
         throw err
     }
+
+}
+
+export const sendSMSNotification = async function (order) {
+
+    const result = await smsRequest.headers({
+        "cache-control": "no-cache"
+    }).query({
+        "authorization": SMS_API_AUTH_KEY,
+        "sender_id": SMS_API_SENDER_ID,
+        "message": SMS_API_MESSAGE_ID,
+        "variables_values": `${order.order_id}|${order.service}|${order.consignment_no}|${order.service_url}|${order.feedback_email}|`,
+        "route": "dlt",
+        "numbers": `${order.customer_phone}`,
+    })
+
+    return result.body;
 
 }
 
