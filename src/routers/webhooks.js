@@ -1,7 +1,10 @@
 import express from 'express'
+import chalk from 'chalk';
 import { populateWorkspaceSheet, getRawOrdersData, googleSpreadsheetInit } from '../helpers.js'
 
 const router = new express.Router();
+router.use(express.json());
+router.use(express.urlencoded({ extended: true }))
 
 router.post('/webhooks/orders/created', async function (req, res) {
 
@@ -60,6 +63,23 @@ router.post('/webhooks/sms/status/fallback', function (req, res) {
 
     } catch (err) {
 
+    }
+})
+
+router.post('/webhooks/whatsapp/status', function (req, res) {
+    try {
+        if (req.body.SmsStatus === 'sent') {
+            const data = req.body;
+            const phone = data.To.split(':')[1].slice(-10);
+            const status = data.MessageStatus;
+            console.log('WHATSAPP STATUS\n---------------\n');
+            console.log(chalk`${phone} ------ {green ${status}}`);
+            // console.log(req.body);
+        }
+        res.status(200).send();
+    }
+    catch (err) {
+        console.log(err);
     }
 })
 

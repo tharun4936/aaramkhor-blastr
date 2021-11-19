@@ -3,11 +3,12 @@ import Shopify from 'shopify-api-node';
 import { GoogleSpreadsheet } from 'google-spreadsheet'
 import { google } from 'googleapis'
 import nodemailer from 'nodemailer';
+import twilio from 'twilio';
 import unirest from 'unirest';
 
 dotenv.config();
 
-const { API_KEY, PASSWORD, HOST_NAME, VERSION, SPREADSHEET_ID, TRACKING_LINK, SMS_API_AUTH_KEY, SMS_API_SENDER_ID, SMS_API_MESSAGE_ID, SMS_API_URL, GMAIL_API_USER, GMAIL_API_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN, GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY } = process.env;
+const { API_KEY, PASSWORD, HOST_NAME, VERSION, SPREADSHEET_ID, TRACKING_LINK, SMS_API_AUTH_KEY, SMS_API_SENDER_ID, SMS_API_MESSAGE_ID, SMS_API_URL, GMAIL_API_USER, GMAIL_API_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN, GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_SENDER_PHONE_NUMBER } = process.env;
 
 const OAuth2_client = new google.auth.OAuth2(GMAIL_API_CLIENT_ID, GMAIL_CLIENT_SECRET);
 OAuth2_client.setCredentials({ refresh_token: GMAIL_REFRESH_TOKEN })
@@ -151,6 +152,35 @@ export const populateSMSStatusSheet = async function (doc, spreadsheetData) {
     }
 }
 
+export const populateWhatsappStatusSheet = async function (doc, spreadsheetData) {
+    try {
+        await doc.loadInfo();
+        // console.log(spreadsheetData)
+        const statusSheet = doc.sheetsByTitle['Whatsapp Status'];
+        for (let i = 0; i < spreadsheetData.length; i++) {
+            // await doc.loadInfo();
+            await statusSheet.addRow({
+                S_No: spreadsheetData[i].s_no,
+                Order_Number: String(spreadsheetData[i].order_id),
+                Order: spreadsheetData[i].order,
+                Order_Quantity: spreadsheetData[i].order_quantity,
+                Customer_Name: spreadsheetData[i].customer_name,
+                Customer_Phone: String(spreadsheetData[i].customer_phone),
+                Customer_Email: spreadsheetData[i].customer_email,
+                Tracking_Number: spreadsheetData[i].consignment_no,
+                Created_At: spreadsheetData[i].created_at,
+                Tracking_Link: spreadsheetData[i].tracking_link,
+                Whatsapp_Status: spreadsheetData[i].whatsapp_status,
+                Date_Modified: spreadsheetData[i].date_modified
+            })
+        }
+    } catch (err) {
+        throw err;
+    }
+}
+
+
+
 
 export const getRawOrdersData = function (requestBody) {
     try {
@@ -290,6 +320,79 @@ export const checkWalletBalance = async function () {
         throw err;
     }
 
+}
+
+export const sendWhatsappShipmentTemplateMsg = async function (order) {
+    try {
+        const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+        const result = await client.messages.create({
+            from: `whatsapp:${TWILIO_SENDER_PHONE_NUMBER}`,
+            body: `Your order (Order ID ${order.order_id}) has been shipped via ${order.service} with the consignment no. ${order.consignment_no}. You can track the order on ${order.service_url}. In case of any issues with delivery please mail with your order ID to ${order.feedback_email} . If you have any other queries, type or hit 'Query' in the chat.  `,
+            to: `whatsapp:+91${order.customer_phone}`
+        })
+        return result;
+    } catch (err) {
+        throw err;
+    }
+}
+
+export const sendWhatsappSessionMessage = async function (message, receiver) {
+    try {
+        const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+        const result = await client.messages.create({
+            from: `whatsapp:${TWILIO_SENDER_PHONE_NUMBER}`,
+            body: `${message}`,
+            to: `whatsapp:${receiver}`
+        })
+        return result;
+    } catch (err) {
+        throw err;
+    }
+}
+
+
+// rowData =  order_id, order,order_quantity, customer_name, customer_phone, customer_email, consignment_no, created_at, tracking_link
+export const getDataFromSheet = async function (doc, orderNo = 'all', rowData = 'none') {
+    try {
+        await doc.loadInfo();
+        const sheet = doc.sheetsByTitle['Filled'];
+        const rows = await sheet.getRows();
+        const data = rows.map(rowObj => {
+            return {
+                order_id: rowObj.Order_Number,
+                order: rowObj.Order.split(' ~ ').map(orderq => orderq.trim()),
+                order_quantity: rowObj.Order_Quantity.split(' ~ ').map(orderq => orderq.trim()),
+                customer_name: rowObj.Customer_Name,
+                customer_phone: rowObj.Customer_Phone,
+                customer_email: rowObj.Customer_Email,
+                consignment_no: rowObj.Tracking_Number,
+                created_at: rowObj.Created_At,
+                tracking_link: rowObj.Tracking_Link
+            }
+        })
+        if (orderNo === 'all' && rowData === 'none') {
+            return data;
+        }
+        else {
+            const result = data.find((dataObj) => dataObj.order_id === orderNo);
+            if (rowData === 'none')
+                return result;
+            else {
+                //  order_id
+                // // order
+                // // order_quantity
+                // // customer_name
+                // // customer_phone
+                // // customer_email
+                // // consignment_no
+                // // created_at
+                // // tracking_link
+                return result[rowData];
+            }
+        }
+    } catch (err) {
+        throw err;
+    }
 }
 
 export function emailMarkup(name, order, order_id, consignment_no) {
