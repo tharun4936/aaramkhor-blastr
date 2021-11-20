@@ -19,7 +19,6 @@
     "hbs": "^4.1.2",
     "node-fetch": "^3.0.0",
     "nodemailer": "^6.7.0",
-    "pkg": "^5.4.1",
     "shopify-api-node": "^3.8.0",
     "socket.io": "^4.3.1",
     "socket.io-client": "^4.3.2",
