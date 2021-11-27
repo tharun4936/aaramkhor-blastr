@@ -173,13 +173,13 @@ router.post('/api/orders/whatsapp/incoming', async function (req, res) {
     try {
         const doc = await googleSpreadsheetInit();
         console.log(req.body);
-        const sender = '+14155238886';
+        // const sender = '+14155238886';
         const reciever = req.body.From.slice(-13);
         const message = 'Your message has been recieved! \nThank you for responding! \n- From node chatbot';
         // rowData =  order_id,order,order_quantity,customer_name,customer_phone,customer_email,consignment_no,created_at,tracking_link
         const result = await getDataFromSheet(doc, '13361');
-        // const result = await sendWhatsappSessionMessage(message, reciever);
-        console.log(result);
+        const messageResult= await sendWhatsappSessionMessage(message, reciever);
+        console.log(messageResult);
         res.status(200).send();
     } catch (err) {
         res.status(400).send();
