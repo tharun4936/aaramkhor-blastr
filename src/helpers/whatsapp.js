@@ -1,4 +1,8 @@
 import twilio from 'twilio';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 
 const {TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_SENDER_PHONE_NUMBER} = process.env;
 

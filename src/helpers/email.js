@@ -1,8 +1,10 @@
 import { google } from 'googleapis';
 import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
 
+dotenv.config();
 
-const {GMAIL_API_CLIENT_ID, GMAIL_API_USER, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN} = process.env
+const {GMAIL_API_CLIENT_ID, GMAIL_API_USER, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN} = process.env;
 
 const OAuth2_client = new google.auth.OAuth2(GMAIL_API_CLIENT_ID, GMAIL_CLIENT_SECRET);
 OAuth2_client.setCredentials({ refresh_token: GMAIL_REFRESH_TOKEN })

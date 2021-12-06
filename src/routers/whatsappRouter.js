@@ -11,6 +11,7 @@ whatsappRouter.post('/whatsapp/sendwhatsapp', async function(req,res){
         const data = req.body.data;
         // console.log(data);
         let result;
+        console.log('WHATSAPP STATUS\n---------------');
         for (let i = 0; i < data.length; i++) {
             result = await sendWhatsappShipmentTemplateMsg({
                 order_id: data[i].order_id,

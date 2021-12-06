@@ -1,13 +1,24 @@
 import Shopify from 'shopify-api-node';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 
 const {HOST_NAME, API_KEY, PASSWORD, VERSION} = process.env;
 
+
 const shopify = new Shopify({
-    shopName: HOST_NAME,
-    apiKey: API_KEY,
-    password: PASSWORD,
-    apiVersion: VERSION
-});
+    shopName:HOST_NAME,
+    apiKey:API_KEY,
+    password:PASSWORD,
+    apiVersion:VERSION
+})
+// const shopify = new Shopify({
+//     shopName: HOST_NAME,
+//     apiKey: API_KEY,
+//     password: PASSWORD,
+//     apiVersion: VERSION
+// });
 
 export const fetchData = async function (resource, query = '') {
     try {

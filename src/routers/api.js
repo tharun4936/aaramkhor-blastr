@@ -1,5 +1,5 @@
 import express from 'express';
-import { fetchData } from '../helpers/helpers.js'
+import { fetchData } from '../helpers/shopify.js'
 
 const router = new express.Router();
 router.use(express.urlencoded({ extended: true }))

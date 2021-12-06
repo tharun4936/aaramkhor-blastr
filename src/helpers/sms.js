@@ -1,4 +1,7 @@
 import unirest from 'unirest';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const {SMS_API_AUTH_KEY,SMS_API_MESSAGE_ID, SMS_API_URL, SMS_API_SENDER_ID} = process.env;
 

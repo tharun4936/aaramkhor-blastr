@@ -1,4 +1,7 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet'
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const {GOOGLE_SERVICE_ACCOUNT_EMAIL,GOOGLE_PRIVATE_KEY,SPREADSHEET_ID, TRACKING_LINK} = process.env;
 

@@ -1,17 +1,15 @@
-import path from 'path'
 import dotenv from "dotenv";
-dotenv.config();
-
+import path from 'path'
 import express from 'express'
 import hbs from 'hbs'
 import { Server } from 'socket.io'
 import http from 'http';
-import APIRouter from './routers/api.js'
-import WebhookRouter from './routers/webhooks.js'
 import smsRouter from './routers/smsRouter.js';
 import emailRouter from './routers/emailRouter.js';
 import whatsappRouter from './routers/whatsappRouter.js';
+import APIRouter from './routers/api.js'
 
+dotenv.config();
 
 const __dirname = path.resolve()
 const app = express();
@@ -30,9 +28,11 @@ hbs.registerPartials(partialsPath)
 
 app.use(express.static(publicDirectoryPath))
 app.use(express.json());
+
 app.use(emailRouter);
 app.use(smsRouter);
 app.use(whatsappRouter);
+app.use(APIRouter);
 // app.use(APIRouter);
 // app.use(WebhookRouter);
 
