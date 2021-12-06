@@ -1,6 +1,6 @@
 import express from 'express'
 import chalk from 'chalk';
-import { populateWorkspaceSheet, getRawOrdersData, googleSpreadsheetInit, getDataFromSheet, sendWhatsappSessionMessage } from '../helpers.js'
+import { populateWorkspaceSheet, getRawOrdersData, googleSpreadsheetInit, getDataFromSheet, sendWhatsappSessionMessage } from '../helpers/helpers.js'
 
 const router = new express.Router();
 router.use(express.json());
