@@ -52,7 +52,7 @@ export const sendEmailNotification = async function (data, transporter) {
 
 }
 
-export function emailMarkup(name, order, order_id, consignment_no) {
+export function emailMarkup(name, order_id, consignment_no) {
     return `<!DOCTYPE html>
     <html>
     

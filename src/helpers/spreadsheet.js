@@ -1,6 +1,7 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet'
 import dotenv from 'dotenv';
 
+
 dotenv.config();
 
 const {GOOGLE_SERVICE_ACCOUNT_EMAIL,GOOGLE_PRIVATE_KEY,SPREADSHEET_ID, TRACKING_LINK} = process.env;
@@ -150,18 +151,8 @@ export const populateEmailStatusSheet = async function (doc, spreadsheetData) {
         for (let i = 0; i < spreadsheetData.length; i++) {
             // await doc.loadInfo();
             await statusSheet.addRow({
-                S_No: spreadsheetData[i].s_no,
                 Order_Number: String(spreadsheetData[i].order_id),
-                Order: spreadsheetData[i].order,
-                Order_Quantity: spreadsheetData[i].order_quantity,
-                Customer_Name: spreadsheetData[i].customer_name,
-                Customer_Phone: String(spreadsheetData[i].customer_phone),
-                Customer_Email: spreadsheetData[i].customer_email,
-                Tracking_Number: spreadsheetData[i].consignment_no,
-                Created_At: spreadsheetData[i].created_at,
-                Tracking_Link: spreadsheetData[i].tracking_link,
-                Mail_Status: spreadsheetData[i].mail_status,
-                Date_Modified: spreadsheetData[i].date_modified
+                Mail_Status: spreadsheetData[i].mail_status
             })
         }
     } catch (err) {
@@ -177,18 +168,8 @@ export const populateSMSStatusSheet = async function (doc, spreadsheetData) {
         for (let i = 0; i < spreadsheetData.length; i++) {
             // await doc.loadInfo();
             await statusSheet.addRow({
-                S_No: spreadsheetData[i].s_no,
                 Order_Number: String(spreadsheetData[i].order_id),
-                Order: spreadsheetData[i].order,
-                Order_Quantity: spreadsheetData[i].order_quantity,
-                Customer_Name: spreadsheetData[i].customer_name,
-                Customer_Phone: String(spreadsheetData[i].customer_phone),
-                Customer_Email: spreadsheetData[i].customer_email,
-                Tracking_Number: spreadsheetData[i].consignment_no,
-                Created_At: spreadsheetData[i].created_at,
-                Tracking_Link: spreadsheetData[i].tracking_link,
-                SMS_Status: spreadsheetData[i].sms_status,
-                Date_Modified: spreadsheetData[i].date_modified
+                SMS_Status: spreadsheetData[i].sms_status
             })
         }
     } catch (err) {
@@ -201,24 +182,50 @@ export const populateWhatsappStatusSheet = async function (doc, spreadsheetData)
         await doc.loadInfo();
         // console.log(spreadsheetData)
         const statusSheet = doc.sheetsByTitle['Whatsapp Status'];
+        // console.log(statusSheet)
         for (let i = 0; i < spreadsheetData.length; i++) {
             // await doc.loadInfo();
             await statusSheet.addRow({
-                S_No: spreadsheetData[i].s_no,
                 Order_Number: String(spreadsheetData[i].order_id),
-                Order: spreadsheetData[i].order,
-                Order_Quantity: spreadsheetData[i].order_quantity,
-                Customer_Name: spreadsheetData[i].customer_name,
-                Customer_Phone: String(spreadsheetData[i].customer_phone),
-                Customer_Email: spreadsheetData[i].customer_email,
-                Tracking_Number: spreadsheetData[i].consignment_no,
-                Created_At: spreadsheetData[i].created_at,
-                Tracking_Link: spreadsheetData[i].tracking_link,
-                Whatsapp_Status: spreadsheetData[i].whatsapp_status,
-                Date_Modified: spreadsheetData[i].date_modified
+                Whatsapp_Status: spreadsheetData[i].whatsapp_status
             })
         }
     } catch (err) {
         throw err;
     }
+}
+
+export const isNotificationSent = async function(sheetName, order_id){
+    try{
+
+        let status_column;
+        const rows = await loadSheetData(sheetName);
+        if(sheetName === 'Email Status') status_column = 'Mail_Status';
+        else if(sheetName === 'SMS Status') status_column = 'SMS_Status';
+        else if(sheetName === 'Whatsapp Status') status_column = 'Whatsapp_Status';
+        const data = rows.map(rowObj => {
+            return {
+                order_id:rowObj.Order_Number,
+                status: rowObj[status_column]
+            }
+        })
+        const foundData = data.find(order => order.order_id === order_id)
+        // console.log(data);
+        // console.log(foundData);
+        if(foundData){ 
+            if(foundData[status_column] === 'Not Sent'){
+                return false;
+            }
+            else if(foundData[status_column] === 'Sent') {
+                return true;
+            }
+        }
+        else{
+            return false;
+        }
+    } catch(err){
+        // console.log(err);
+        throw err;
+    }
+
 }

@@ -8,6 +8,7 @@ const whatsappRouter = new express.Router();
 whatsappRouter.post('/whatsapp/sendwhatsapp', async function(req,res){
     try {
         // const doc = await googleSpreadsheetInit();
+        const doc = await googleSpreadsheetInit();
         const data = req.body.data;
         // console.log(data);
         let result;
@@ -25,9 +26,13 @@ whatsappRouter.post('/whatsapp/sendwhatsapp', async function(req,res){
             if (result.status === 'queued') {
                 console.log(chalk`{yellow ${data[i].order_id}} ------ ${data[i].customer_phone} ------ {green queued}`);
                 data[i].whatsapp_status = 'Sent';
+                // console.log(data);
+                
                 // populateWhatsappStatusSheet(doc, data);
             }
         }
+        // console.log(data);
+        populateWhatsappStatusSheet(doc, data);
         res.status(200).send("This is whatsapp message-sending endpoint.");
         // console.log(result);
     } catch (err) {
